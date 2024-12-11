@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h3 {
+            text-align: center;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #roomList div {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>Create a Room</h3>
+        <input type="text" id="roomName" placeholder="Enter Room Name" />
+        
+        <label for="roomType">Room Type:</label>
+        <select id="roomType">
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+        </select>
+
+        <div id="passwordDiv" style="display: none;">
+            <input type="text" id="roomPassword" placeholder="Set Room Password" />
+        </div>
+
+        <button onclick="createRoom()">Create Room</button>
+
+        <h3>Available Rooms</h3>
+        <div id="roomList"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var socket = io();
+
+        // Show password field when private room is selected
+        document.getElementById('roomType').addEventListener('change', function() {
+            if (this.value === 'private') {
+                document.getElementById('passwordDiv').style.display = 'block';
+            } else {
+                document.getElementById('passwordDiv').style.display = 'none';
+            }
+        });
+
+        // Create room function
+        function createRoom() {
+            var roomName = document.getElementById('roomName').value;
+            var roomType = document.getElementById('roomType').value;
+            var roomPassword = roomType === 'private' ? document.getElementById('roomPassword').value : null;
+
+            if (roomName !== "") {
+                console.log('Creating room:', { roomName, roomType, roomPassword });
+                socket.emit('createRoom', { roomName, roomType, roomPassword });
+            } else {
+                alert('Please enter a room name!');
+            }
+        }
+
+        // Join room function (for public rooms)
+        function joinRoom(roomName) {
+            socket.emit('joinRoom', { roomName });
+        }
+
+        // Listen for room list update
+        socket.on('roomList', function(rooms) {
+            console.log('Updated Room List:', rooms);
+            var roomListDiv = document.getElementById('roomList');
+            roomListDiv.innerHTML = '';  // Clear the room list before updating it
+            rooms.forEach(room => {
+                var roomDiv = document.createElement('div');
+                roomDiv.innerHTML = `<button onclick="joinRoom('${room.name}')">${room.name} (${room.type})</button>`;
+                roomListDiv.appendChild(roomDiv);
+            });
+        });
+    </script>
+</body>
+</html>
